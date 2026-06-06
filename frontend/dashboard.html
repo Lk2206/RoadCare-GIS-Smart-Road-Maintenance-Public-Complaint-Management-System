@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Road Maintenance System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/premium.css">
+
+    <style>
+        /* ── Dashboard-Specific Styles ─────────────────────────────── */
+
+        /* Role view visibility */
+        .role-view { display: none; }
+        .role-view.active-view { display: block; animation: fadeInUp 0.5s ease-out; }
+
+        /* Page header */
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .dashboard-header h2 { margin: 0; }
+
+        /* ── Stat Cards ─────────────────────────────────────────────── */
+        .stat-card {
+            position: relative;
+            background: var(--glass-bg);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 24px;
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent-from, #6366f1), var(--accent-to, #818cf8));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.55;
+            transition: opacity 0.3s ease;
+        }
+        .stat-card:hover::before { opacity: 1; }
+
+        .stat-card .stat-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        .stat-card .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+        }
+        .stat-card .stat-label {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-top: 4px;
+        }
+
+        /* Accent palettes for stat cards */
+        .stat-card.accent-indigo  { --accent-from: #6366f1; --accent-to: #a78bfa; }
+        .stat-card.accent-emerald { --accent-from: #10b981; --accent-to: #34d399; }
+        .stat-card.accent-amber   { --accent-from: #f59e0b; --accent-to: #fbbf24; }
+        .stat-card.accent-sky     { --accent-from: #3b82f6; --accent-to: #60a5fa; }
+
+        .stat-icon.bg-indigo  { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .stat-icon.bg-emerald { background: rgba(16,185,129,0.15); color: #34d399; }
+        .stat-icon.bg-amber   { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .stat-icon.bg-sky     { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+        /* ── Section Panels ─────────────────────────────────────────── */
+        .section-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .section-panel .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-panel .section-title i {
+            font-size: 1rem;
+            opacity: 0.75;
+        }
+
+        /* Styled list-group items inside dashboard panels */
+        .section-panel .list-group-item {
+            background: rgba(30,41,59,0.55);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-radius: 12px !important;
+            margin-bottom: 10px;
+            padding: 16px 18px;
+            transition: var(--transition-smooth);
+        }
+        .section-panel .list-group-item:hover {
+            background: rgba(30,41,59,0.8);
+            border-color: rgba(99,102,241,0.25);
+        }
+
+        /* ── Severity Badges ────────────────────────────────────────── */
+        .severity-critical { background: rgba(239,68,68,0.18); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .severity-high     { background: rgba(249,115,22,0.18); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+        .severity-medium   { background: rgba(245,158,11,0.18); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+        .severity-low      { background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+        /* ── Status Timeline (User Complaints) ──────────────────────── */
+        .status-timeline {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-top: 14px;
+        }
+        .timeline-step {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(148,163,184,0.5);
+            position: relative;
+        }
+        .timeline-step .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(148,163,184,0.25);
+            border: 2px solid rgba(148,163,184,0.3);
+            flex-shrink: 0;
+        }
+        .timeline-step.completed .step-dot {
+            background: var(--success);
+            border-color: var(--success);
+            box-shadow: 0 0 8px rgba(16,185,129,0.4);
+        }
+        .timeline-step.completed { color: #34d399; }
+        .timeline-step.current .step-dot {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(99,102,241,0.5);
+            animation: pulse-dot 2s infinite;
+        }
+        .timeline-step.current { color: #818cf8; }
+        .timeline-connector {
+            width: 32px;
+            height: 2px;
+            background: rgba(148,163,184,0.2);
+            flex-shrink: 0;
+        }
+        .timeline-connector.completed { background: var(--success); }
+
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 6px rgba(99,102,241,0.4); }
+            50% { box-shadow: 0 0 14px rgba(99,102,241,0.7); }
+        }
+
+        /* ── Complaint Card (User) ─────────────────────────────────── */
+        .complaint-card {
+            background: rgba(30,41,59,0.55);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 14px;
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition-smooth);
+        }
+        .complaint-card:hover {
+            background: rgba(30,41,59,0.75);
+            border-color: rgba(99,102,241,0.3);
+        }
+        .complaint-card.status-resolved { border-left-color: var(--success); }
+        .complaint-card.status-in-progress { border-left-color: var(--info); }
+        .complaint-card.status-assigned { border-left-color: var(--warning); }
+
+        /* ── Refresh Button ─────────────────────────────────────────── */
+        .btn-refresh {
+            background: rgba(99,102,241,0.12);
+            border: 1px solid rgba(99,102,241,0.25);
+            color: #818cf8;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition-smooth);
+        }
+        .btn-refresh:hover {
+            background: rgba(99,102,241,0.22);
+            color: #a5b4fc;
+            border-color: rgba(99,102,241,0.4);
+        }
+
+        /* ── Empty State ────────────────────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* ── Responsive tweaks ─────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .stat-card .stat-value { font-size: 1.5rem; }
+            .dashboard-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+            .status-timeline { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+
+<body class="dashboard-layout">
+
+    <!-- ═══════════════════════ Sidebar ═══════════════════════ -->
+    <aside class="sidebar py-4">
+        <div class="px-4 mb-4 text-center">
+            <i class="fas fa-road fa-2x mb-2 gradient-text"></i>
+            <h5 class="fw-bold gradient-text m-0">RMS Portal</h5>
+        </div>
+
+        <nav class="mt-4 flex-grow-1">
+            <a href="/map-view.html" class="nav-item-premium">
+                <i class="fas fa-map-marked-alt"></i> Interactive Map
+            </a>
+            <a href="/dashboard.html" class="nav-item-premium active">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+
+            <!-- Admin Sidebar Extras -->
+            <div id="admin-sidebar" class="d-none mt-4">
+                <h6 class="text-uppercase text-secondary px-4 mb-2 small fw-bold tracking-wider">Admin Controls</h6>
+                <div class="px-4 mb-3">
+                    <div class="glass-panel p-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small">Pending Complaints</span>
+                            <span class="badge badge-danger" id="pending-complaints">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary small">Active Assignments</span>
+                            <span class="badge badge-info" id="active-assignments">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Engineer Sidebar Extras -->
+            <div id="engineer-sidebar" class="d-none mt-4">
+                <h6 class="text-uppercase text-secondary px-4 mb-2 small fw-bold tracking-wider">Engineer Workspace</h6>
+                <div class="px-4 mb-3">
+                    <div class="glass-panel p-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary small">Assigned Roads</span>
+                            <span class="badge badge-info" id="assigned-count">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-secondary small">Pending Work</span>
+                            <span class="badge badge-warning" id="pending-work">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- User Info Panel -->
+        <div class="px-3 mt-auto">
+            <div class="glass-panel p-3 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="fw-bold small text-white" id="username">Guest</div>
+                    <div class="text-secondary" style="font-size: 0.75rem;" id="user-role-label">System User</div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger border-0" id="logout-btn" title="Sign Out">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════════════ Main Content ═══════════════════════ -->
+    <main class="main-content" style="overflow-y: auto; padding: 30px; background: var(--bg-dark);">
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div>
+                <h2 class="fw-bold gradient-text mb-1">Dashboard</h2>
+                <p class="text-secondary mb-0" style="font-size: 0.9rem;">Road Maintenance Management Overview</p>
+            </div>
+            <button class="btn btn-refresh" id="refresh-dashboard">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+        </div>
+
+
+        <!-- ─────────────────── ADMIN VIEW ─────────────────── -->
+        <div id="admin-view" class="role-view">
+
+            <!-- Stat Cards Row -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-4 col-md-4 animate-fade-in-up">
+                    <div class="stat-card accent-indigo">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div>
+                                <div class="stat-value text-white" id="total-roads">0</div>
+                                <div class="stat-label">Total Roads</div>
+                            </div>
+                            <div class="stat-icon bg-indigo">
+                                <i class="fas fa-road"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-4 animate-fade-in-up delay-100">
+                    <div class="stat-card accent-amber">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div>
+                                <div class="stat-value text-white" id="total-complaints">0</div>
+                                <div class="stat-label">Complaints</div>
+                            </div>
+                            <div class="stat-icon bg-amber">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-4 animate-fade-in-up delay-200">
+                    <div class="stat-card accent-sky">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div>
+                                <div class="stat-value text-white" id="avg-health">0</div>
+                                <div class="stat-label">Avg Health Score</div>
+                            </div>
+                            <div class="stat-icon bg-sky">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Admin Grid -->
+            <div class="row g-4">
+
+                <!-- Recent Complaints -->
+                <div class="col-lg-8">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-clipboard-list text-warning"></i>
+                            <span>All Complaints</span>
+                            <span class="badge badge-warning ms-auto" style="font-size:0.72rem;">Live</span>
+                        </div>
+                        <!-- Nav tabs -->
+                        <ul class="nav nav-pills mb-3" id="escalationTabs" role="tablist" style="gap: 8px;">
+                          <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="gram-tab" data-bs-toggle="pill" data-bs-target="#gram" type="button" role="tab" aria-controls="gram" aria-selected="true" style="border-radius: 8px; background: rgba(255,255,255,0.05); color: white;">Gram Panchayat</button>
+                          </li>
+                          <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="taluka-tab" data-bs-toggle="pill" data-bs-target="#taluka" type="button" role="tab" aria-controls="taluka" aria-selected="false" style="border-radius: 8px; background: rgba(255,255,255,0.05); color: white;">Taluka Level</button>
+                          </li>
+                          <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="municipal-tab" data-bs-toggle="pill" data-bs-target="#municipal" type="button" role="tab" aria-controls="municipal" aria-selected="false" style="border-radius: 8px; background: rgba(255,255,255,0.05); color: white;">Municipal Corporation</button>
+                          </li>
+                        </ul>
+                        
+                        <!-- Tab panes -->
+                        <div class="tab-content" id="escalationTabsContent">
+                          <div class="tab-pane fade show active" id="gram" role="tabpanel" aria-labelledby="gram-tab">
+                              <div id="admin-complaints-gram" style="max-height: 500px; overflow-y: auto;">
+                                  <div class="empty-state">
+                                      <i class="fas fa-inbox d-block"></i>
+                                      <p class="mb-0">Loading complaints...</p>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="tab-pane fade" id="taluka" role="tabpanel" aria-labelledby="taluka-tab">
+                              <div id="admin-complaints-taluka" style="max-height: 500px; overflow-y: auto;">
+                                  <div class="empty-state">
+                                      <i class="fas fa-inbox d-block"></i>
+                                      <p class="mb-0">Loading complaints...</p>
+                                  </div>
+                              </div>
+                          </div>
+                          <div class="tab-pane fade" id="municipal" role="tabpanel" aria-labelledby="municipal-tab">
+                              <div id="admin-complaints-municipal" style="max-height: 500px; overflow-y: auto;">
+                                  <div class="empty-state">
+                                      <i class="fas fa-inbox d-block"></i>
+                                      <p class="mb-0">Loading complaints...</p>
+                                  </div>
+                              </div>
+                          </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem Areas -->
+                <div class="col-lg-4">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-map-marker-alt text-danger"></i>
+                            <span>Problem Areas</span>
+                        </div>
+                        <div id="problem-areas" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-check-circle d-block"></i>
+                                <p class="mb-0">No problem areas identified</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Civic Leaderboard -->
+                    <div class="section-panel mt-4">
+                        <div class="section-title">
+                            <i class="fas fa-trophy text-warning"></i>
+                            <span>Civic Leaderboard (Monthly)</span>
+                        </div>
+                        <div id="civic-leaderboard" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-medal d-block"></i>
+                                <p class="mb-0">Loading leaderboard...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Registrations -->
+                <div class="col-lg-12">
+                    <div class="section-panel border-warning" style="border: 1px solid rgba(245,158,11,0.3);">
+                        <div class="section-title">
+                            <i class="fas fa-user-clock text-warning"></i>
+                            <span>Pending Registrations (Engineers)</span>
+                        </div>
+                        <div id="pending-users-list" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-users-slash d-block"></i>
+                                <p class="mb-0">No pending registrations</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Personnel -->
+                <div class="col-lg-12">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-users text-primary"></i>
+                            <span>Active Personnel</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover mb-0" style="background: transparent;">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="active-personnel-list">
+                                    <tr>
+                                        <td colspan="4" class="text-center text-secondary py-3">Loading personnel...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Budget Approvals -->
+                <div class="col-lg-6">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-coins text-success"></i>
+                            <span>Pending Budget Approvals</span>
+                        </div>
+                        <div id="pending-budgets-list" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-wallet d-block"></i>
+                                <p class="mb-0">No pending budget requests</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Work Verifications -->
+                <div class="col-lg-6">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-clipboard-check text-info"></i>
+                            <span>Pending Work Verifications</span>
+                        </div>
+                        <div id="pending-verifications-list" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-hard-hat d-block"></i>
+                                <p class="mb-0">No pending verifications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+        <!-- ─────────────────── ENGINEER VIEW ─────────────────── -->
+        <div id="engineer-view" class="role-view">
+        
+            <div class="section-panel border-info" style="border: 1px solid rgba(59,130,246,0.3);">
+                <div class="section-title">
+                    <i class="fas fa-briefcase text-info"></i>
+                    <span>Available Work (Open for Quotes)</span>
+                </div>
+                <div id="available-work-list" class="list-group list-group-flush">
+                    <div class="empty-state">
+                        <i class="fas fa-search-location d-block"></i>
+                        <p class="mb-1">No open complaints available for quoting</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-panel">
+                <div class="section-title">
+                    <i class="fas fa-hard-hat text-warning"></i>
+                    <span>Assigned Work</span>
+                </div>
+                <div id="assigned-work-list" class="list-group list-group-flush">
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-check d-block"></i>
+                        <p class="mb-1">No assigned work currently</p>
+                        <small class="text-secondary">New assignments will appear here</small>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- ─────────────────── USER VIEW ─────────────────── -->
+        <div id="user-view" class="role-view">
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-bullhorn text-primary" style="color:#818cf8 !important;"></i>
+                            <span>My Complaints</span>
+                        </div>
+                        <div id="my-complaints-list" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-comment-dots d-block"></i>
+                                <p class="mb-1">You have not filed any complaints yet</p>
+                                <small class="text-secondary">Report road issues from the Interactive Map</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 mb-4">
+                    <!-- Civic Leaderboard (User View) -->
+                    <div class="section-panel">
+                        <div class="section-title">
+                            <i class="fas fa-trophy text-warning"></i>
+                            <span>Civic Leaderboard (Monthly)</span>
+                        </div>
+                        <div id="civic-leaderboard-user" class="list-group list-group-flush">
+                            <div class="empty-state">
+                                <i class="fas fa-medal d-block"></i>
+                                <p class="mb-0">Loading leaderboard...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ═══════════════════════ Loading Spinner ═══════════════════════ -->
+    <div class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-75 d-none" id="loading-spinner" style="z-index: 9999;">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Toast Container ═══════════════════════ -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" style="z-index: 1055;"></div>
+
+    <!-- ═══════════════════════ Modals ═══════════════════════ -->
+    
+    <!-- Submit Quote Modal -->
+    <div class="modal fade" id="submitQuoteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content text-white" style="background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 16px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-info"><i class="fas fa-file-invoice-dollar me-2"></i>Submit Quotation</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quote-form">
+                        <input type="hidden" id="quote-complaint-id">
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Estimated Cost (₹)</label>
+                            <input type="number" class="form-control bg-dark text-white border-secondary" id="quote-amount" required min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Implementation Plan / Notes</label>
+                            <textarea class="form-control bg-dark text-white border-secondary" id="quote-notes" rows="3" placeholder="Briefly describe how you plan to resolve this..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-secondary small">Upload Image (Optional)</label>
+                            <input type="file" class="form-control bg-dark text-white border-secondary" id="quote-image" accept="image/*">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-info rounded-pill" id="btn-submit-quote">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Quotes Modal (Admin) -->
+    <div class="modal fade" id="viewQuotesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content text-white" style="background: var(--glass-bg); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 16px;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-warning"><i class="fas fa-list-alt me-2"></i>Review Quotations</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="quotes-container">
+                    <!-- Quotes rendered here -->
+                    <div class="text-center text-secondary py-4">Loading quotes...</div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════ Scripts ═══════════════════════ -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/api.js"></script>
+
+    <!-- Auth check & sidebar logic (same pattern as map-view) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Auth gate
+            const token = sessionStorage.getItem('access_token');
+            const userStr = sessionStorage.getItem('user');
+
+            if (!token || !userStr) {
+                window.location.href = '/';
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            document.getElementById('username').textContent = user.username;
+            document.getElementById('user-role-label').textContent =
+                user.role.charAt(0).toUpperCase() + user.role.slice(1);
+
+            // Show role-specific sidebar section
+            if (user.role === 'admin') {
+                document.getElementById('admin-sidebar').classList.remove('d-none');
+            } else if (user.role === 'engineer') {
+                document.getElementById('engineer-sidebar').classList.remove('d-none');
+            }
+
+            // Logout handler
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                sessionStorage.removeItem('access_token');
+                sessionStorage.removeItem('user');
+                window.location.href = '/';
+            });
+        });
+    </script>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+</html>
