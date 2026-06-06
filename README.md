@@ -1,0 +1,2 @@
+# RoadCare-GIS-Smart-Road-Maintenance-Public-Complaint-Management-System
+🚧 RoadCare GIS is a smart web-based road maintenance platform that uses GIS technology to manage road infrastructure efficiently. Citizens can report potholes and road damage, while engineers and administrators track issues, assign repairs, monitor progress, and analyze road health through interactive maps and dashboards. 🗺️📊
